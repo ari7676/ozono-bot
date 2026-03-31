@@ -195,4 +195,6 @@ def alert_stream():
 if __name__ == '__main__':
     threading.Thread(target=monitor_loop, daemon=True).start()
     print("Ozono Bot corriendo en http://localhost:5000")
-    app.run(debug=False, port=5000, threaded=True)
+   import os
+port = int(os.environ.get('PORT', 5000))
+app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
