@@ -235,22 +235,32 @@ def fetch_symbol(ticker, market):
         print(f"[fetch] {ticker}: {e}")
         return None
 
-def fetch_market(market):
-    now = time.time()
-    if market in _cache and (now - _cache_time.get(market, 0)) < CACHE_TTL:
-        return _cache[market]
+def fetch_market_background(market):
     syms = SYMBOLS.get(market, [])
     results = []
     for sym in syms:
         d = fetch_symbol(sym, market)
         if d:
             results.append(d)
-        time.sleep(12)
+        time.sleep(13)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market] = results
-    _cache_time[market] = now
+    _cache_time[market] = time.time()
     print(f"[cache] {market}: {len(results)} simbolos")
-    return results
+
+def fetch_market(market):
+    now = time.time()
+    # Si hay cache válido, devolvelo inmediatamente
+    if market in _cache and (now - _cache_time.get(market, 0)) < CACHE_TTL:
+        return _cache[market]
+    # Si no hay cache, lanzá fetch en background y devolvé lista vacía
+    if market not in _cache:
+        threading.Thread(target=fetch_market_background, args=(market,), daemon=True).start()
+    return _cache.get(market, [])
+
+@app.route('/api/scan/<market>')
+def scan(market):
+    return jsonify(fetch_market(market))
 
 def monitor_loop():
     time.sleep(30)
