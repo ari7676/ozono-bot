@@ -293,10 +293,6 @@ def monitor_loop():
 def index():
     return render_template('index.html')
 
-@app.route('/api/scan/<market>')
-def scan(market):
-    return jsonify(fetch_market(market))
-
 @app.route('/api/fear-greed')
 def fear_greed():
     try:
