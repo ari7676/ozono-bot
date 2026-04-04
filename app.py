@@ -3,7 +3,7 @@ from flask_cors import CORS
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import json, time, threading
+import json, time, threading, os
 from datetime import datetime
 import requests as req
 
@@ -37,6 +37,7 @@ CACHE_TTL = 180
 _sse_clients = []
 _prev_signals = {}
 
+# ─── INDICADORES ──────────────────────────────────────────
 def calc_ema(s, p): return s.ewm(span=p, adjust=False).mean()
 
 def calc_rsi(s, p=14):
@@ -64,26 +65,65 @@ def calc_supertrend(high, low, close, p=10, m=3):
     st = lower.where(direction==1, upper)
     return st, direction
 
-def get_signal(rsi, macd_v, macd_s, ema9, price, bbp):
+# ─── SCORING 0-100 (NUEVO) ────────────────────────────────
+def calc_score(close, high, low, rsi, macd_v, macd_s, ema9, bbp, st_up, vol):
     score = 0
-    if macd_v > macd_s: score += 1
-    else: score -= 1
-    if price > ema9: score += 1
-    else: score -= 1
-    if rsi > 55: score += 1
-    elif rsi < 45: score -= 1
-    if bbp > 0: score += 1
-    else: score -= 1
-    if score >= 3: return 'STRONG BUY', round(score/4, 3)
-    if score >= 1: return 'BUY', round(score/4, 3)
-    if score <= -3: return 'STRONG SELL', round(score/4, 3)
-    if score <= -1: return 'SELL', round(score/4, 3)
+    señales = []
+
+    # EMA alineada (25 pts)
+    ema21 = calc_ema(close, 21).iloc[-1]
+    ema50 = calc_ema(close, 50).iloc[-1]
+    price = float(close.iloc[-1])
+    if price > ema9 > ema21 > ema50:
+        score += 25; señales.append("EMA ↑")
+    elif price < ema9 < ema21 < ema50:
+        score += 25; señales.append("EMA ↓")
+
+    # MACD cruce (20 pts)
+    if macd_v > macd_s and float(calc_macd(close)[0].iloc[-2]) <= float(calc_macd(close)[1].iloc[-2]):
+        score += 20; señales.append("MACD cruce ↑")
+    elif macd_v < macd_s and float(calc_macd(close)[0].iloc[-2]) >= float(calc_macd(close)[1].iloc[-2]):
+        score += 20; señales.append("MACD cruce ↓")
+    elif macd_v > macd_s:
+        score += 10; señales.append("MACD bull")
+    elif macd_v < macd_s:
+        score += 10; señales.append("MACD bear")
+
+    # RSI zona correcta (20 pts)
+    if 50 < rsi < 70:
+        score += 20; señales.append(f"RSI {rsi:.0f} bull")
+    elif 30 < rsi < 50:
+        score += 20; señales.append(f"RSI {rsi:.0f} bear")
+    elif rsi < 30:
+        score += 10; señales.append(f"RSI {rsi:.0f} oversold")
+    elif rsi > 70:
+        score += 10; señales.append(f"RSI {rsi:.0f} overbought")
+
+    # Supertrend (20 pts)
+    if st_up:
+        score += 20; señales.append("ST ↑")
+    else:
+        score += 20; señales.append("ST ↓")
+
+    # Volumen alto (15 pts)
+    vol_avg = float(vol.rolling(20).mean().iloc[-1])
+    if vol_avg > 0 and float(vol.iloc[-1]) > vol_avg * 1.3:
+        score += 15; señales.append("Vol alto")
+
+    return min(score, 100), señales
+
+def get_signal_from_score(score, st_up):
+    if score >= 75:
+        return ('STRONG BUY' if st_up else 'STRONG SELL'), round(score/100, 3)
+    if score >= 55:
+        return ('BUY' if st_up else 'SELL'), round(score/100, 3)
     return 'NEUTRAL', 0.0
 
+# ─── FETCH ────────────────────────────────────────────────
 def fetch_symbol(ticker):
     try:
         hist = yf.download(ticker, period='1y', interval='1d', progress=False, auto_adjust=True)
-        if hist.empty or len(hist) < 30: return None
+        if hist.empty or len(hist) < 50: return None
         close = hist['Close'].squeeze()
         high  = hist['High'].squeeze()
         low   = hist['Low'].squeeze()
@@ -95,29 +135,34 @@ def fetch_symbol(ticker):
         if np.isnan(rsi): rsi = 50.0
         rsi   = round(rsi, 1)
         ml, ms = calc_macd(close)
-        mv = round(float(ml.iloc[-1]), 4)
-        msv= round(float(ms.iloc[-1]), 4)
-        ema9 = round(float(calc_ema(close,9).iloc[-1]), 2)
+        mv  = round(float(ml.iloc[-1]), 4)
+        msv = round(float(ms.iloc[-1]), 4)
+        ema9_val = float(calc_ema(close, 9).iloc[-1])
         st_s, st_d = calc_supertrend(high, low, close)
         st_val = round(float(st_s.iloc[-1]), 2)
         st_up  = int(st_d.iloc[-1]) == 1
         bbp = round(float(high.iloc[-1]-low.iloc[-1])*(rsi/100-0.5)*2, 2)
         w52h = round(float(close.tail(252).max()), 2)
         w52l = round(float(close.tail(252).min()), 2)
-        sig, rec = get_signal(rsi, mv, msv, ema9, price, bbp)
+
+        # Score nuevo
+        score, señales = calc_score(close, high, low, rsi, mv, msv, ema9_val, bbp, st_up, vol)
+        sig, rec = get_signal_from_score(score, st_up)
+
         sym = ticker.replace('-USD','').replace('^','')
         return {
-            'symbol': sym, 'price': round(price,6 if price<1 else 2),
+            'symbol': sym, 'price': round(price, 6 if price<1 else 2),
             'change': chg, 'volume': int(float(vol.iloc[-1])),
             'signal': sig, 'recommend': rec,
+            'score': score, 'señales': señales,
             'w52h': w52h, 'w52l': w52l,
             'pe': None, 'beta': None, 'mcap': None,
             'indicators': {
-                'macd':       {'val': mv,   'status': 'Bull' if mv>msv else 'Bear'},
-                'rsi':        {'val': rsi,  'status': 'Oversold' if rsi<30 else 'Overbought' if rsi>70 else 'Neutral'},
-                'ema9':       {'val': ema9, 'status': 'Above' if price>ema9 else 'Below'},
-                'supertrend': {'val': st_val, 'status': 'Up' if st_up else 'Down'},
-                'bbp':        {'val': bbp,  'status': 'Bull' if bbp>0 else 'Bear'},
+                'macd':       {'val': mv,        'status': 'Bull' if mv>msv else 'Bear'},
+                'rsi':        {'val': rsi,        'status': 'Oversold' if rsi<30 else 'Overbought' if rsi>70 else 'Neutral'},
+                'ema9':       {'val': round(ema9_val,2), 'status': 'Above' if price>ema9_val else 'Below'},
+                'supertrend': {'val': st_val,     'status': 'Up' if st_up else 'Down'},
+                'bbp':        {'val': bbp,        'status': 'Bull' if bbp>0 else 'Bear'},
             }
         }
     except Exception as e:
@@ -133,12 +178,16 @@ def fetch_market(market):
     for sym in syms:
         d = fetch_symbol(sym)
         if d: results.append(d)
+    # Ordenar por score descendente
+    results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market] = results
     _cache_time[market] = now
     print(f"[cache] {market}: {len(results)} simbolos")
     return results
 
+# ─── MONITOR (FIX GUNICORN) ───────────────────────────────
 def monitor_loop():
+    time.sleep(10)  # esperar que arranque el server
     while True:
         try:
             for market in ('wallstreet','crypto','forex'):
@@ -146,13 +195,20 @@ def monitor_loop():
                     sym = item['symbol']; sig = item['signal']
                     prev = _prev_signals.get(sym)
                     if prev and prev != sig and sig in ('BUY','SELL','STRONG BUY','STRONG SELL'):
-                        alert = {'symbol':sym,'signal':sig,'prev':prev,'price':item['price'],'change':item['change'],'market':market,'time':datetime.now().strftime('%H:%M:%S')}
+                        alert = {
+                            'symbol': sym, 'signal': sig, 'prev': prev,
+                            'price': item['price'], 'change': item['change'],
+                            'score': item.get('score', 0),
+                            'market': market,
+                            'time': datetime.now().strftime('%H:%M:%S')
+                        }
                         for q in list(_sse_clients): q.append(alert)
                     _prev_signals[sym] = sig
         except Exception as e:
             print(f"[monitor] {e}")
         time.sleep(180)
 
+# ─── RUTAS ────────────────────────────────────────────────
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -165,19 +221,30 @@ def fear_greed():
         r = req.get('https://api.alternative.me/fng/?limit=2', timeout=8)
         data = r.json()['data']
         cur = data[0]; prev = data[1] if len(data)>1 else None
-        return jsonify({'value':int(cur['value']),'label':cur['value_classification'],'prev':int(prev['value']) if prev else None})
+        return jsonify({
+            'value': int(cur['value']),
+            'label': cur['value_classification'],
+            'prev':  int(prev['value']) if prev else None
+        })
     except:
-        return jsonify({'value':None,'label':'N/A','prev':None})
+        return jsonify({'value': None, 'label': 'N/A', 'prev': None})
 
 @app.route('/api/summary')
 def summary():
     out = {}
     for m in ('wallstreet','crypto','indices','forex'):
         items = fetch_market(m)
-        bulls = [i for i in items if 'BUY' in i['signal']]
+        bulls = [i for i in items if 'BUY'  in i['signal']]
         bears = [i for i in items if 'SELL' in i['signal']]
         by_chg = sorted(items, key=lambda x: x['change'])
-        out[m] = {'total':len(items),'bulls':len(bulls),'bears':len(bears),'neutral':len(items)-len(bulls)-len(bears),'best':by_chg[-1] if by_chg else None,'worst':by_chg[0] if by_chg else None}
+        out[m] = {
+            'total':   len(items),
+            'bulls':   len(bulls),
+            'bears':   len(bears),
+            'neutral': len(items)-len(bulls)-len(bears),
+            'best':    by_chg[-1] if by_chg else None,
+            'worst':   by_chg[0]  if by_chg else None
+        }
     return jsonify(out)
 
 @app.route('/api/alerts/stream')
@@ -192,9 +259,10 @@ def alert_stream():
             if q in _sse_clients: _sse_clients.remove(q)
     return Response(gen(), content_type='text/event-stream', headers={'Cache-Control':'no-cache'})
 
+# ─── ARRANQUE — funciona con gunicorn Y python directo ────
+threading.Thread(target=monitor_loop, daemon=True).start()
+
 if __name__ == '__main__':
-    threading.Thread(target=monitor_loop, daemon=True).start()
     print("Ozono Bot corriendo en http://localhost:5000")
-    import os
     port = int(os.environ.get('PORT', 5000))
     app.run(debug=False, host='0.0.0.0', port=port, threaded=True)
