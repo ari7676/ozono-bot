@@ -176,5 +176,9 @@ def process_df(df, ticker):
         'w52h': w52h, 'w52l': w52l,
         'pe': None, 'beta': None, 'mcap': None,
         'indicators': {
-            'macd':       {'val': mv,            'status': 'Bull' if mv>msv else 'Bear'},
-            'rsi':        {'val': rsi,            'status': 'Oversold' if rsi<30 else 'Overbought' if rsi>70 else 'Neut
+            'macd':       {'val': mv,           'status': 'Bull' if mv>msv else 'Bear'},
+            'rsi':        {'val': rsi,           'status': 'Oversold' if rsi<30 else 'Neutral' if rsi<70 else 'Overbought'},
+            'ema9':       {'val': round(ema9,4), 'status': 'Above' if price>ema9 else 'Below'},
+            'supertrend': {'val': st_val,        'status': 'Up' if st_up else 'Down'},
+            'bbp':        {'val': 0,             'status': 'Bull' if st_up else 'Bear'},
+        }
