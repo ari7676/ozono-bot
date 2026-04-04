@@ -182,3 +182,8 @@ def process_df(df, ticker):
             'supertrend': {'val': st_val,        'status': 'Up' if st_up else 'Down'},
             'bbp':        {'val': 0,             'status': 'Bull' if st_up else 'Bear'},
         }
+}
+    }
+    183            'bbp':        {'val': 0,             'status': 'Bull' if st_up else 'Bear'},
+184        }
+185    }
