@@ -122,7 +122,13 @@ def get_signal_from_score(score, st_up):
 # ─── FETCH ────────────────────────────────────────────────
 def fetch_symbol(ticker):
     try:
-        hist = yf.download(ticker, period='1y', interval='1d', progress=False, auto_adjust=True)
+        session = req.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        })
+        hist = yf.download(ticker, period='1y', interval='1d', progress=False,
+                           auto_adjust=True, session=session)
         if hist.empty or len(hist) < 50: return None
         close = hist['Close'].squeeze()
         high  = hist['High'].squeeze()
@@ -144,11 +150,8 @@ def fetch_symbol(ticker):
         bbp = round(float(high.iloc[-1]-low.iloc[-1])*(rsi/100-0.5)*2, 2)
         w52h = round(float(close.tail(252).max()), 2)
         w52l = round(float(close.tail(252).min()), 2)
-
-        # Score nuevo
         score, señales = calc_score(close, high, low, rsi, mv, msv, ema9_val, bbp, st_up, vol)
         sig, rec = get_signal_from_score(score, st_up)
-
         sym = ticker.replace('-USD','').replace('^','')
         return {
             'symbol': sym, 'price': round(price, 6 if price<1 else 2),
@@ -158,11 +161,11 @@ def fetch_symbol(ticker):
             'w52h': w52h, 'w52l': w52l,
             'pe': None, 'beta': None, 'mcap': None,
             'indicators': {
-                'macd':       {'val': mv,        'status': 'Bull' if mv>msv else 'Bear'},
-                'rsi':        {'val': rsi,        'status': 'Oversold' if rsi<30 else 'Overbought' if rsi>70 else 'Neutral'},
+                'macd':       {'val': mv,               'status': 'Bull' if mv>msv else 'Bear'},
+                'rsi':        {'val': rsi,               'status': 'Oversold' if rsi<30 else 'Overbought' if rsi>70 else 'Neutral'},
                 'ema9':       {'val': round(ema9_val,2), 'status': 'Above' if price>ema9_val else 'Below'},
-                'supertrend': {'val': st_val,     'status': 'Up' if st_up else 'Down'},
-                'bbp':        {'val': bbp,        'status': 'Bull' if bbp>0 else 'Bear'},
+                'supertrend': {'val': st_val,            'status': 'Up' if st_up else 'Down'},
+                'bbp':        {'val': bbp,               'status': 'Bull' if bbp>0 else 'Bear'},
             }
         }
     except Exception as e:
