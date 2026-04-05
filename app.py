@@ -12,15 +12,19 @@ CORS(app)
 TWELVE_KEY = os.environ.get('TWELVE_KEY', '')
 BASE_URL   = 'https://api.twelvedata.com'
 
-SYMBOLS = {
+SYMBOLS = SYMBOLS = {
     'wallstreet': ['NVDA','AAPL','MSFT','GOOGL','AMZN','META','TSLA','AVGO',
                    'JPM','V','MA','UNH','XOM','WMT','LLY','JNJ','PG','MRK',
-                   'HD','COST','ABBV','BAC','NFLX','CRM','AMD','INTC','MU','CSCO'],
+                   'HD','COST','ABBV','BAC','NFLX','CRM','AMD','INTC','MU','CSCO',
+                   'TSM','AMAT','MCD','VLO','PLTR','IBM','BMRN','DNLI'],
     'forex':      ['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD',
-                   'USD/CHF','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY'],
-    'indices':    ['SPY','QQQ','DIA','IWM','^VIX'],
+                   'USD/CHF','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY',
+                   'USD/CHF','USD/JPY','AUD/JPY','GBP/CHF','EUR/CHF',
+                   'EUR/AUD','GBP/AUD','EUR/NZD','AUD/NZD','GBP/NZD',
+                   'AUD/EUR'],
+    'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT'],
     'crypto':     ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD',
-                   'ADA/USD','DOGE/USD','AVAX/USD','DOT/USD']
+                   'DOGE/USD','ADA/USD','AVAX/USD']
 }
 
 _cache        = {}
