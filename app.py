@@ -30,7 +30,7 @@ SYMBOLS = SYMBOLS = {
 _cache        = {}
 _cache_time   = {}
 _loading      = set()
-CACHE_TTL     = 600
+CACHE_TTL     = 3600
 _sse_clients  = []
 _prev_signals = {}
 
@@ -204,8 +204,9 @@ def monitor_loop():
     time.sleep(60)
     while True:
         try:
+            # Solo revisa el cache existente — NO fetchea datos nuevos
             for market in SYMBOLS:
-                for item in fetch_market(market):
+                for item in _cache.get(market, []):
                     sym  = item['symbol']
                     sig  = item['signal']
                     prev = _prev_signals.get(sym)
@@ -220,7 +221,7 @@ def monitor_loop():
                     _prev_signals[sym] = sig
         except Exception as e:
             print(f"[monitor] {e}")
-        time.sleep(600)
+        time.sleep(300)  # revisa cada 5 min pero sin fetchear
 
 # ─── RUTAS ────────────────────────────────────────────────
 @app.route('/')
