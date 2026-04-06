@@ -12,16 +12,17 @@ CORS(app)
 TWELVE_KEY = os.environ.get('TWELVE_KEY', '')
 BASE_URL   = 'https://api.twelvedata.com'
 
-SYMBOLS = SYMBOLS = {
+SYMBOLS = {
     'wallstreet': ['NVDA','AAPL','MSFT','GOOGL','AMZN','META','TSLA','AVGO',
                    'JPM','V','MA','UNH','XOM','WMT','LLY','JNJ','PG','MRK',
                    'HD','COST','ABBV','BAC','NFLX','CRM','AMD','INTC','MU','CSCO',
                    'TSM','AMAT','MCD','VLO','PLTR','IBM','BMRN','DNLI'],
     'forex':      ['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD',
                    'USD/CHF','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY',
-                   'USD/CHF','USD/JPY','AUD/JPY','GBP/CHF','EUR/CHF',
-                   'EUR/AUD','GBP/AUD','EUR/NZD','AUD/NZD','GBP/NZD',
-                   'AUD/EUR'],
+                   'AUD/JPY','GBP/CHF','EUR/CHF','EUR/AUD','GBP/AUD',
+                   'EUR/NZD','AUD/NZD','GBP/NZD','AUD/EUR',
+                   'USD/MXN','USD/SGD','USD/HKD','USD/NOK','USD/SEK',
+                   'EUR/CAD','EUR/SEK','GBP/CAD','CAD/JPY','CHF/JPY'],
     'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT'],
     'crypto':     ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD',
                    'DOGE/USD','ADA/USD','AVAX/USD']
@@ -171,12 +172,11 @@ def fetch_symbol(ticker):
         print(f"[fetch] {ticker}: {e}")
         return None
 
-# ─── BATCH fetch (Twelve Data soporta múltiples símbolos) ─
+# ─── BATCH fetch ──────────────────────────────────────────
 def fetch_market_background(market):
     _loading.add(market)
     syms    = SYMBOLS.get(market, [])
     results = []
-    # Twelve Data permite hasta 8 símbolos por request
     batch_size = 8
     for i in range(0, len(syms), batch_size):
         batch = syms[i:i+batch_size]
@@ -184,7 +184,7 @@ def fetch_market_background(market):
             d = fetch_symbol(sym)
             if d: results.append(d)
         if i + batch_size < len(syms):
-            time.sleep(8)   # respeta rate limit free: ~8 req/min
+            time.sleep(8)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market]      = results
     _cache_time[market] = time.time()
@@ -204,7 +204,6 @@ def monitor_loop():
     time.sleep(60)
     while True:
         try:
-            # Solo revisa el cache existente — NO fetchea datos nuevos
             for market in SYMBOLS:
                 for item in _cache.get(market, []):
                     sym  = item['symbol']
@@ -221,7 +220,7 @@ def monitor_loop():
                     _prev_signals[sym] = sig
         except Exception as e:
             print(f"[monitor] {e}")
-        time.sleep(300)  # revisa cada 5 min pero sin fetchear
+        time.sleep(300)
 
 # ─── RUTAS ────────────────────────────────────────────────
 @app.route('/')
