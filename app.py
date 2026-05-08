@@ -1,3 +1,9 @@
+@app.route('/api/refresh/<market>')
+def force_refresh(market):
+    _cache.pop(market, None)
+    _cache_time.pop(market, None)
+    threading.Thread(target=fetch_market_background, args=(market,), daemon=True).start()
+    return jsonify({'status': 'refreshing', 'market': market})
 from flask import Flask, jsonify, render_template, Response
 from flask_cors import CORS
 import pandas as pd
