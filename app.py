@@ -7,6 +7,7 @@ from datetime import datetime
 import requests as req
 
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 CORS(app)
 
 TWELVE_KEY = os.environ.get('TWELVE_KEY', '')
