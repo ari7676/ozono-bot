@@ -224,7 +224,7 @@ def fetch_market_background(market):
             d = fetch_symbol(sym)
             if d: results.append(d)
         if i + batch_size < len(syms):
-    time.sleep(2)
+            time.sleep(2)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market]      = results
     _cache_time[market] = time.time()
