@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ozono Bot</title>
 <style>
-/* ── Reset & Variables ──────────────────────────────────────────────────── */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
@@ -22,6 +21,7 @@
   --red2:    #ff6b6b;
   --orange:  #f5a623;
   --blue:    #2196f3;
+  --purple:  #a78bfa;
 }
 
 body {
@@ -33,12 +33,10 @@ body {
   overflow: hidden;
 }
 
-/* ── Scrollbars ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar        { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: var(--bg4); border-radius: 2px; }
 
-/* ── Header ─────────────────────────────────────────────────────────────── */
 .header {
   display: flex;
   align-items: center;
@@ -115,7 +113,6 @@ body {
 .btn-icon:hover { color: var(--text); border-color: var(--muted); }
 .btn-icon.spin svg { animation: spin 0.8s linear infinite; }
 
-/* ── Filters ─────────────────────────────────────────────────────────────── */
 .filters {
   display: flex;
   align-items: center;
@@ -153,15 +150,15 @@ body {
 .chip.buy-chip.active   { color: var(--green);  border-color: var(--green);  background: rgba(38,166,154,0.1); }
 .chip.sell-chip.active  { color: var(--red);    border-color: var(--red);    background: rgba(239,83,80,0.1); }
 .chip.rsi-chip.active   { color: var(--orange); border-color: var(--orange); background: rgba(245,166,35,0.1); }
+.chip.rp-chip           { color: var(--purple); border-color: #7c3aed; }
+.chip.rp-chip.active    { color: var(--purple); border-color: var(--purple); background: rgba(124,58,237,0.15); }
 
-/* ── Layout ──────────────────────────────────────────────────────────────── */
 .layout {
   display: flex;
   height: calc(100vh - 44px - 36px);
   overflow: hidden;
 }
 
-/* ── Table area ──────────────────────────────────────────────────────────── */
 .main { flex: 1; overflow: auto; min-width: 0; }
 
 table { width: 100%; border-collapse: collapse; }
@@ -195,7 +192,6 @@ tbody tr:hover { background: rgba(42,46,57,0.6); }
 
 td { padding: 7px 10px; white-space: nowrap; }
 
-/* Symbol cell */
 .sym-cell { display: flex; align-items: center; gap: 6px; }
 .star { color: var(--muted); cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.1s; }
 tr:hover .star, .star.on { opacity: 1; }
@@ -207,7 +203,6 @@ tr:hover .star, .star.on { opacity: 1; }
 .neg { color: var(--red); }
 .zer { color: var(--muted); }
 
-/* Signal badge */
 .badge {
   display: inline-block;
   padding: 2px 8px;
@@ -222,8 +217,8 @@ tr:hover .star, .star.on { opacity: 1; }
 .badge-NEUTRAL    { color: var(--muted);  border-color: var(--border); background: transparent; }
 .badge-SBUY       { color: var(--green2); border-color: var(--green2); background: rgba(0,229,209,0.1); }
 .badge-SSELL      { color: var(--red2);   border-color: var(--red2);   background: rgba(255,107,107,0.1); }
+.badge-RP         { color: var(--purple); border-color: #7c3aed;       background: rgba(124,58,237,0.15); }
 
-/* Indicator cell */
 .ic { display: flex; flex-direction: column; gap: 1px; }
 .ic-v { font-size: 11px; font-variant-numeric: tabular-nums; }
 .ic-s { font-size: 10px; }
@@ -233,10 +228,8 @@ tr:hover .star, .star.on { opacity: 1; }
 .ovs    { color: var(--red); }
 .ovb    { color: var(--orange); }
 
-/* Volume cell */
 .vol-v { font-size: 11px; font-variant-numeric: tabular-nums; }
 
-/* Loading / Empty */
 .state-wrap {
   display: flex;
   flex-direction: column;
@@ -258,7 +251,6 @@ tr:hover .star, .star.on { opacity: 1; }
   animation: spin 0.8s linear infinite;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────────────────── */
 .sidebar {
   width: 260px;
   flex-shrink: 0;
@@ -283,7 +275,6 @@ tr:hover .star, .star.on { opacity: 1; }
 }
 .sb-sec h3 .cnt { color: var(--muted); font-weight: 400; font-size: 11px; }
 
-/* Sentiment bar */
 .sent-bar { height: 4px; border-radius: 2px; display: flex; overflow: hidden; margin-bottom: 5px; }
 .s-green { background: var(--green); }
 .s-gray  { background: var(--bg4); }
@@ -299,19 +290,16 @@ tr:hover .star, .star.on { opacity: 1; }
 .sent-labels .r { color: var(--red); }
 .sent-labels .m { color: var(--muted); }
 
-/* Best / Worst grid */
 .bw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .bw-card { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
 .bw-lbl  { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 3px; }
 .bw-sym  { font-size: 12px; font-weight: 700; color: #e0e3eb; }
 .bw-chg  { font-size: 11px; margin-top: 1px; }
 
-/* Fear & Greed */
 .fg-wrap { text-align: center; }
 .fg-label { font-size: 12px; font-weight: 700; margin-top: 2px; }
 .fg-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-/* Notif banner */
 .notif-banner {
   background: rgba(33,150,243,0.08);
   border: 1px solid rgba(33,150,243,0.25);
@@ -325,7 +313,19 @@ tr:hover .star, .star.on { opacity: 1; }
 }
 .notif-banner:hover { background: rgba(33,150,243,0.14); }
 
-/* ── Alert Toasts ────────────────────────────────────────────────────────── */
+/* Royal Purple sidebar card */
+.rp-card {
+  background: rgba(124,58,237,0.08);
+  border: 1px solid rgba(124,58,237,0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.rp-card:hover { background: rgba(124,58,237,0.15); }
+.rp-sym  { font-size: 12px; font-weight: 700; color: var(--purple); }
+.rp-trail { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
 .toast-wrap {
   position: fixed;
   top: 56px; right: 14px;
@@ -348,8 +348,9 @@ tr:hover .star, .star.on { opacity: 1; }
   animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
   transition: opacity 0.4s;
 }
-.toast.buy  { border-left: 3px solid var(--green); }
-.toast.sell { border-left: 3px solid var(--red); }
+.toast.buy    { border-left: 3px solid var(--green); }
+.toast.sell   { border-left: 3px solid var(--red); }
+.toast.rp     { border-left: 3px solid var(--purple); }
 .toast-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
 .toast-sym  { font-weight: 700; font-size: 14px; }
 .toast-time { font-size: 10px; color: var(--muted); }
@@ -360,7 +361,6 @@ tr:hover .star, .star.on { opacity: 1; }
   to   { transform: translateX(0);   opacity: 1; }
 }
 
-/* ── Detail Modal ────────────────────────────────────────────────────────── */
 .overlay {
   display: none;
   position: fixed; inset: 0;
@@ -403,7 +403,6 @@ tr:hover .star, .star.on { opacity: 1; }
 }
 .close-x:hover { background: var(--bg3); color: var(--text); }
 
-/* Signal icons bar */
 .sig-bar {
   display: flex;
   align-items: center;
@@ -423,9 +422,9 @@ tr:hover .star, .star.on { opacity: 1; }
 .sa-up  { background: rgba(38,166,154,0.2); color: var(--green); }
 .sa-dn  { background: rgba(239,83,80,0.2);  color: var(--red); }
 .sa-neu { background: rgba(54,58,69,0.8);   color: var(--muted); }
+.sa-rp  { background: rgba(124,58,237,0.2); color: var(--purple); }
 .sig-lbl { font-size: 9px; color: var(--muted); letter-spacing: 0.3px; }
 
-/* Range bar */
 .range-sec { margin-top: 14px; }
 .range-ttl { font-size: 10px; color: var(--muted); letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; }
 .range-nums { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -441,14 +440,12 @@ tr:hover .star, .star.on { opacity: 1; }
 }
 .range-pct { text-align: center; font-size: 11px; color: var(--text); }
 
-/* Indicator cards */
 .ind-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
 .ind-card { background: var(--bg3); border-radius: 8px; padding: 12px 14px; }
 .icard-name { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
 .icard-val  { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
 .icard-sub  { font-size: 11px; margin-top: 2px; }
 
-/* Fundamentals */
 .fund-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
 .fund-card { background: var(--bg3); border-radius: 6px; padding: 8px 10px; }
 .fc-name { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
@@ -470,13 +467,25 @@ tr:hover .star, .star.on { opacity: 1; }
 }
 .tv-link:hover { background: var(--bg4); }
 
-/* Separator */
 .sep { height: 1px; background: var(--border); margin: 14px 0 0; }
+
+/* Royal Purple modal banner */
+.rp-banner {
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rp-banner-lbl { font-size: 11px; color: var(--purple); font-weight: 600; }
+.rp-banner-val { font-size: 11px; color: var(--muted); }
 </style>
 </head>
 <body>
 
-<!-- ── Header ──────────────────────────────────────────────────────────── -->
 <div class="header">
   <div class="logo">
     <div class="logo-icon">⬡</div>
@@ -502,7 +511,6 @@ tr:hover .star, .star.on { opacity: 1; }
   </div>
 </div>
 
-<!-- ── Filters ─────────────────────────────────────────────────────────── -->
 <div class="filters">
   <span class="filter-label">FILTROS</span>
   <div class="chip buy-chip"  data-f="STRONG BUY">Strong Buy</div>
@@ -516,12 +524,10 @@ tr:hover .star, .star.on { opacity: 1; }
   <div class="chip"           data-f="st-up">ST Up</div>
   <div class="chip"           data-f="st-down">ST Down</div>
   <div class="chip"           data-f="bbp-bull">BBP Bull</div>
+  <div class="chip rp-chip"   data-f="royal-purple">⬡ Royal Purple</div>
 </div>
 
-<!-- ── Layout ──────────────────────────────────────────────────────────── -->
 <div class="layout">
-
-  <!-- Table -->
   <div class="main" id="mainArea">
     <div class="state-wrap" id="stateWrap">
       <div class="spinner"></div>
@@ -529,43 +535,33 @@ tr:hover .star, .star.on { opacity: 1; }
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sb-sec" id="sbFG"></div>
+    <div class="sb-sec" id="sbRP"></div>
     <div class="sb-sec" id="sbWS"></div>
     <div class="sb-sec" id="sbIdx"></div>
     <div class="sb-sec" id="sbCrypto"></div>
     <div id="sbNotif"></div>
   </div>
-
 </div>
 
-<!-- ── Toast container ─────────────────────────────────────────────────── -->
 <div class="toast-wrap" id="toastWrap"></div>
 
-<!-- ── Detail Modal ───────────────────────────────────────────────────── -->
 <div class="overlay" id="overlay" onclick="maybeClose(event)">
   <div class="modal" id="modal"></div>
 </div>
 
-
 <script>
-// ═══════════════════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════════════════
 const S = {
   market: 'wallstreet',
   data:   [],
-  view:   [],       // after filter
+  view:   [],
   sortK:  null,
   sortD:  1,
   filter: null,
   watch:  new Set(JSON.parse(localStorage.getItem('wl') || '[]')),
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════════════════
 const qs  = s => document.querySelector(s);
 const qsa = s => [...document.querySelectorAll(s)];
 
@@ -612,7 +608,7 @@ function symClean(s) {
 function indClsCls(status) {
   if (['Bull','Above','Up'].includes(status)) return 'bull';
   if (['Bear','Below','Down'].includes(status)) return 'bear';
-  if (status === 'Oversold')  return 'ovs';
+  if (status === 'Oversold')   return 'ovs';
   if (status === 'Overbought') return 'ovb';
   return 'ind-n';
 }
@@ -635,17 +631,11 @@ function fgLbl(v) {
   return 'Codicia Extrema';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// CLOCK
-// ═══════════════════════════════════════════════════════════════════════════
 function tick() {
   qs('#clock').textContent = new Date().toLocaleTimeString('es-AR', { hour12: false });
 }
 setInterval(tick, 1000); tick();
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TABS
-// ═══════════════════════════════════════════════════════════════════════════
 qsa('.tab').forEach(t => t.addEventListener('click', () => {
   const tab = t.dataset.tab;
   if (tab === 'general') return;
@@ -657,9 +647,6 @@ qsa('.tab').forEach(t => t.addEventListener('click', () => {
   loadMarket(tab);
 }));
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FILTERS
-// ═══════════════════════════════════════════════════════════════════════════
 qsa('.chip').forEach(chip => chip.addEventListener('click', () => {
   const f = chip.dataset.f;
   if (S.filter === f) {
@@ -676,19 +663,17 @@ function applyFilter() {
   if (!f) { S.view = [...d]; }
   else if (['STRONG BUY','BUY','SELL','STRONG SELL'].includes(f))
     S.view = d.filter(x => x.signal === f);
-  else if (f === 'rsi-os')    S.view = d.filter(x => x.indicators.rsi.val < 30);
-  else if (f === 'rsi-ob')    S.view = d.filter(x => x.indicators.rsi.val > 70);
-  else if (f === 'macd-bull') S.view = d.filter(x => x.indicators.macd.status === 'Bull');
-  else if (f === 'macd-bear') S.view = d.filter(x => x.indicators.macd.status === 'Bear');
-  else if (f === 'st-up')     S.view = d.filter(x => x.indicators.supertrend.status === 'Up');
-  else if (f === 'st-down')   S.view = d.filter(x => x.indicators.supertrend.status === 'Down');
-  else if (f === 'bbp-bull')  S.view = d.filter(x => x.indicators.bbp.status === 'Bull');
+  else if (f === 'rsi-os')       S.view = d.filter(x => x.indicators.rsi.val < 30);
+  else if (f === 'rsi-ob')       S.view = d.filter(x => x.indicators.rsi.val > 70);
+  else if (f === 'macd-bull')    S.view = d.filter(x => x.indicators.macd.status === 'Bull');
+  else if (f === 'macd-bear')    S.view = d.filter(x => x.indicators.macd.status === 'Bear');
+  else if (f === 'st-up')        S.view = d.filter(x => x.indicators.supertrend.status === 'Up');
+  else if (f === 'st-down')      S.view = d.filter(x => x.indicators.supertrend.status === 'Down');
+  else if (f === 'bbp-bull')     S.view = d.filter(x => x.indicators.bbp.status === 'Bull');
+  else if (f === 'royal-purple') S.view = d.filter(x => x.royal_purple === 'LONG');
   renderTable();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SORT
-// ═══════════════════════════════════════════════════════════════════════════
 function doSort(key) {
   S.sortD = (S.sortK === key) ? S.sortD * -1 : 1;
   S.sortK = key;
@@ -700,17 +685,14 @@ function sorted() {
   return [...S.view].sort((a, b) => {
     let va, vb;
     const k = S.sortK;
-    if (k === 'rsi')   { va = a.indicators.rsi.val;         vb = b.indicators.rsi.val; }
-    else if (k === 'macd')  { va = a.indicators.macd.val;   vb = b.indicators.macd.val; }
+    if (k === 'rsi')        { va = a.indicators.rsi.val;  vb = b.indicators.rsi.val; }
+    else if (k === 'macd')  { va = a.indicators.macd.val; vb = b.indicators.macd.val; }
     else                    { va = a[k]; vb = b[k]; }
     if (va == null) return 1; if (vb == null) return -1;
     return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * S.sortD;
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// RENDER TABLE
-// ═══════════════════════════════════════════════════════════════════════════
 function renderTable() {
   const area = qs('#mainArea');
   const rows = sorted();
@@ -721,7 +703,7 @@ function renderTable() {
   }
 
   const th = (k, lbl) => {
-    const on = S.sortK === k;
+    const on   = S.sortK === k;
     const icon = on ? (S.sortD === 1 ? '↑' : '↓') : '↕';
     return `<th onclick="doSort('${k}')" class="${on ? 'sorted' : ''}">${lbl}<span class="si">${icon}</span></th>`;
   };
@@ -739,6 +721,7 @@ function renderTable() {
         <th>Supertrend</th>
         <th>BBP</th>
         ${th('volume','Vol')}
+        <th style="color:var(--purple)">RP</th>
       </tr></thead>
       <tbody>
         ${rows.map(r => rowHTML(r)).join('')}
@@ -754,6 +737,10 @@ function rowHTML(d) {
   const ic = (val, status) =>
     `<div class="ic"><span class="ic-v">${val}</span><span class="ic-s ${indClsCls(status)}">${status}</span></div>`;
 
+  const rpCell = d.royal_purple === 'LONG'
+    ? `<span class="badge badge-RP">LONG</span><br><small style="color:var(--muted);font-size:10px">${fmtP(d.rp_trail)}</small>`
+    : `<span style="color:var(--muted)">–</span>`;
+
   return `<tr onclick="openModal('${d.symbol}')">
     <td><div class="sym-cell">
       <span class="star ${on ? 'on' : ''}" onclick="toggleWatch(event,'${d.symbol}')">★</span>
@@ -768,12 +755,10 @@ function rowHTML(d) {
     <td>${ic(fmtP(i.supertrend.val), i.supertrend.status)}</td>
     <td>${ic(i.bbp.val.toFixed(2), i.bbp.status)}</td>
     <td><span class="vol-v">${fmtV(d.volume)}</span></td>
+    <td>${rpCell}</td>
   </tr>`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// WATCHLIST
-// ═══════════════════════════════════════════════════════════════════════════
 function toggleWatch(e, sym) {
   e.stopPropagation();
   S.watch.has(sym) ? S.watch.delete(sym) : S.watch.add(sym);
@@ -781,22 +766,18 @@ function toggleWatch(e, sym) {
   renderTable();
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MODAL
-// ═══════════════════════════════════════════════════════════════════════════
 function openModal(sym) {
   const d = S.data.find(x => x.symbol === sym);
   if (!d) return;
 
-  const i      = d.indicators;
-  const clean  = symClean(sym);
-  const pct52  = (d.w52h && d.w52l && d.price)
+  const i     = d.indicators;
+  const clean = symClean(sym);
+  const pct52 = (d.w52h && d.w52l && d.price)
     ? Math.min(100, Math.max(0, ((d.price - d.w52l) / (d.w52h - d.w52l)) * 100))
     : null;
 
-  // Signal arrow helper
   const arrow = (status, label) => {
-    const up  = ['Bull','Above','Up'].includes(status);
+    const up  = ['Bull','Above','Up','LONG'].includes(status);
     const dn  = ['Bear','Below','Down'].includes(status);
     const cls = up ? 'sa-up' : dn ? 'sa-dn' : 'sa-neu';
     const sym = up ? '▲' : dn ? '▼' : '—';
@@ -806,13 +787,20 @@ function openModal(sym) {
     </div>`;
   };
 
-  // RSI directional
   const rsiDir = i.rsi.val > 50 ? 'Bull' : i.rsi.val < 50 ? 'Bear' : 'Neutral';
+
+  const rpBanner = d.royal_purple === 'LONG' ? `
+    <div class="rp-banner">
+      <span class="rp-banner-lbl">⬡ Royal Purple LONG</span>
+      <span class="rp-banner-val">Trail Stop: ${fmtP(d.rp_trail)}</span>
+    </div>` : '';
 
   qs('#modal').innerHTML = `
     <div class="modal-hdr">
       <div>
-        <div class="modal-sym">${clean} <span class="${badgeCls(d.signal)}">${d.signal}</span></div>
+        <div class="modal-sym">${clean} <span class="${badgeCls(d.signal)}">${d.signal}</span>
+          ${d.royal_purple === 'LONG' ? '<span class="badge badge-RP">RP</span>' : ''}
+        </div>
         <div class="modal-price">${fmtP(d.price, sym)} <span class="${chgClass(d.change)}">${chgStr(d.change)}</span></div>
       </div>
       <div class="close-x" onclick="closeModal()">✕</div>
@@ -824,7 +812,10 @@ function openModal(sym) {
       ${arrow(i.ema9.status,       'EMA')}
       ${arrow(i.supertrend.status, 'ST')}
       ${arrow(i.bbp.status,        'BBP')}
+      ${arrow(d.royal_purple || '–', 'RP')}
     </div>
+
+    ${rpBanner}
 
     ${pct52 != null ? `
     <div class="range-sec">
@@ -844,7 +835,7 @@ function openModal(sym) {
       <div class="ind-card">
         <div class="icard-name">MACD</div>
         <div class="icard-val ${i.macd.status === 'Bull' ? 'bull' : 'bear'}">${i.macd.val}</div>
-        <div class="icard-sub ${i.macd.status === 'Bull' ? 'bull' : 'bear'}">▼ ${i.macd.status}</div>
+        <div class="icard-sub ${i.macd.status === 'Bull' ? 'bull' : 'bear'}">${i.macd.status}</div>
       </div>
       <div class="ind-card">
         <div class="icard-name">RSI (14)</div>
@@ -894,13 +885,8 @@ function openModal(sym) {
 
 function closeModal() { qs('#overlay').classList.remove('open'); }
 function maybeClose(e) { if (e.target === qs('#overlay')) closeModal(); }
-
-// Close on ESC
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// SIDEBAR
-// ═══════════════════════════════════════════════════════════════════════════
 function renderFG(fg) {
   const v     = fg.value;
   const color = fgColor(v);
@@ -937,6 +923,23 @@ function renderFG(fg) {
     </div>`;
 }
 
+function renderRP(items) {
+  const rpItems = items.filter(x => x.royal_purple === 'LONG')
+                       .sort((a,b) => b.score - a.score)
+                       .slice(0, 8);
+  if (!rpItems.length) {
+    qs('#sbRP').innerHTML = '';
+    return;
+  }
+  qs('#sbRP').innerHTML = `
+    <h3>⬡ Royal Purple <span class="cnt">${rpItems.length} activos</span></h3>
+    ${rpItems.map(d => `
+      <div class="rp-card" onclick="openModal('${d.symbol}')">
+        <div class="rp-sym">${symClean(d.symbol)}</div>
+        <div class="rp-trail">Trail Stop: ${fmtP(d.rp_trail)} · Score ${d.score}</div>
+      </div>`).join('')}`;
+}
+
 function renderSB(id, title, data) {
   if (!data) return;
   const { total, bulls, bears, neutral, best, worst } = data;
@@ -969,9 +972,6 @@ function renderSB(id, title, data) {
     </div>` : ''}`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// TOASTS & ALERTS
-// ═══════════════════════════════════════════════════════════════════════════
 function showToast(a) {
   const isBuy = a.signal.includes('BUY');
   const el = document.createElement('div');
@@ -1026,31 +1026,27 @@ async function askNotif() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// API CALLS
-// ═══════════════════════════════════════════════════════════════════════════
 async function loadMarket(market) {
   const area = qs('#mainArea');
   area.innerHTML = '<div class="state-wrap"><div class="spinner"></div><span>Cargando datos...</span></div>';
   try {
     const r = await fetch(`/api/scan/${market}`);
     if (!r.ok) throw new Error(r.statusText);
-    S.data   = await r.json();
-    S.view   = [...S.data];
+    S.data = await r.json();
+    S.view = [...S.data];
     applyFilter();
+    renderRP(S.data);
   } catch (e) {
-    area.innerHTML = `<div class="state-wrap"><span>⚠ Error al cargar: ${e.message}</span></div>`;
+    area.innerHTML = `<div class="state-wrap"><span>Error al cargar: ${e.message}</span></div>`;
   }
 }
 
 async function loadSidebar() {
-  // Fear & Greed
   try {
     const r = await fetch('/api/fear-greed');
     renderFG(await r.json());
   } catch {}
 
-  // Market summaries
   try {
     const r    = await fetch('/api/summary');
     const data = await r.json();
@@ -1067,14 +1063,11 @@ function doRefresh() {
     .finally(() => btn.classList.remove('spin'));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════════════
 (async function init() {
   loadMarket('wallstreet');
   loadSidebar();
   setupNotif();
-  setInterval(doRefresh, 5 * 60 * 1000); // auto-refresh 5min
+  setInterval(doRefresh, 5 * 60 * 1000);
 })();
 </script>
 </body>
