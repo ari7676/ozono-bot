@@ -66,6 +66,37 @@ def calc_supertrend(high, low, close, p=10, m=3):
         else:                                  direction.iloc[i] = direction.iloc[i-1]
     return lower.where(direction == 1, upper), direction
 
+# ─── ROYAL PURPLE ─────────────────────────────────────────
+def calc_royal_purple(close, high, low, fast=20, slow=50, regime=200, atr_mult=3.0):
+    """
+    Replica la estrategia Royal Purple Trend Follower.
+    Retorna: signal ('LONG' | 'EXIT' | None), trail_stop (float)
+    No puede replicar HTF (daily desde timeframe diario = mismo TF aqui),
+    por eso se omite htfBull — el bot ya trabaja en 1D.
+    """
+    if len(close) < regime + 10:
+        return None, None
+
+    ema_fast   = calc_ema(close, fast)
+    ema_slow   = calc_ema(close, slow)
+    ema_regime = calc_ema(close, regime)
+    atr        = (high - low).rolling(14).mean()  # ATR simplificado
+
+    price      = float(close.iloc[-1])
+    ef         = float(ema_fast.iloc[-1])
+    es         = float(ema_slow.iloc[-1])
+    er         = float(ema_regime.iloc[-1])
+
+    bull_state = price > es and price > er and ef > es
+
+    # trailing stop actual
+    trail = round(float(close.iloc[-1] - atr.iloc[-1] * atr_mult), 6)
+
+    if bull_state:
+        return 'LONG', trail
+    else:
+        return None, trail
+
 def calc_score(close, high, low, rsi, mv, msv, ema9, st_up, vol):
     score = 0
     tags  = []
@@ -143,17 +174,23 @@ def process_df(df, ticker):
     w52h = round(float(close.tail(252).max()), 4)
     w52l = round(float(close.tail(252).min()), 4)
     sym  = ticker.replace('/USD','').replace('/','_')
+
+    # ── Royal Purple signal ──
+    rp_signal, rp_trail = calc_royal_purple(close, high, low)
+
     return {
-        'symbol':    sym,
-        'price':     round(price, 6 if price < 1 else 2),
-        'change':    chg,
-        'volume':    int(float(vol.iloc[-1])),
-        'signal':    sig,
-        'recommend': rec,
-        'score':     score,
-        'senales':   tags,
-        'w52h':      w52h,
-        'w52l':      w52l,
+        'symbol':       sym,
+        'price':        round(price, 6 if price < 1 else 2),
+        'change':       chg,
+        'volume':       int(float(vol.iloc[-1])),
+        'signal':       sig,
+        'recommend':    rec,
+        'score':        score,
+        'senales':      tags,
+        'w52h':         w52h,
+        'w52l':         w52l,
+        'royal_purple': rp_signal,   # 'LONG' | None
+        'rp_trail':     rp_trail,    # nivel de trailing stop
         'pe': None, 'beta': None, 'mcap': None,
         'indicators': {
             'macd':       {'val': mv,            'status': 'Bull' if mv > msv else 'Bear'},
@@ -221,6 +258,18 @@ def monitor_loop():
         except Exception as e:
             print(f"[monitor] {e}")
         time.sleep(300)
+
+# ─── RUTA NUEVA: Royal Purple activos ─────────────────────
+@app.route('/api/royal-purple')
+def royal_purple_activos():
+    """Devuelve solo los activos con Royal Purple LONG activo, ordenados por score."""
+    results = []
+    for market, items in _cache.items():
+        for item in items:
+            if item.get('royal_purple') == 'LONG':
+                results.append({**item, 'market': market})
+    results.sort(key=lambda x: x.get('score', 0), reverse=True)
+    return jsonify(results)
 
 # ─── RUTAS ────────────────────────────────────────────────
 @app.route('/')
