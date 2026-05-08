@@ -26,8 +26,7 @@ SYMBOLS = {
                    'USD/MXN','USD/SGD','USD/HKD','USD/NOK','USD/SEK',
                    'EUR/SEK','GBP/CAD','AUD/EUR'],
     'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT',
-                   'SILJ','PAAS','COPPER','URA','DXY','XLK',
-                   'GOLD','WTI','UKOIL'],
+                   'SILJ','PAAS','COPPER','URA','DXY','XLK'],
     'crypto':     ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD',
                    'DOGE/USD','ADA/USD','AVAX/USD']
 }
@@ -225,7 +224,7 @@ def fetch_market_background(market):
             d = fetch_symbol(sym)
             if d: results.append(d)
         if i + batch_size < len(syms):
-            time.sleep(8)
+    time.sleep(2)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market]      = results
     _cache_time[market] = time.time()
