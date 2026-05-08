@@ -1,9 +1,3 @@
-@app.route('/api/refresh/<market>')
-def force_refresh(market):
-    _cache.pop(market, None)
-    _cache_time.pop(market, None)
-    threading.Thread(target=fetch_market_background, args=(market,), daemon=True).start()
-    return jsonify({'status': 'refreshing', 'market': market})
 from flask import Flask, jsonify, render_template, Response
 from flask_cors import CORS
 import pandas as pd
@@ -21,18 +15,14 @@ BASE_URL   = 'https://api.twelvedata.com'
 
 SYMBOLS = {
     'wallstreet': ['NVDA','AAPL','MSFT','GOOGL','AMZN','META','TSLA','AVGO',
-                   'JPM','V','MA','UNH','XOM','WMT','LLY','JNJ','PG','MRK',
-                   'HD','COST','ABBV','BAC','NFLX','CRM','AMD','INTC','MU','CSCO',
-                   'TSM','AMAT','MCD','VLO','PLTR','IBM','BMRN','DNLI',
-                   'GEV','AVAV','KO','BE','CRWV','LITE','CORZ','IREN','APLD','SNDK','CIFR'],
+                   'JPM','V','MA','JNJ','PG','MRK','COST','ABBV','BAC',
+                   'NFLX','CRM','AMD','INTC','MU','CSCO','TSM','AMAT',
+                   'MCD','VLO','PLTR','IBM','BMRN'],
     'forex':      ['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD',
                    'USD/CHF','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY',
-                   'AUD/JPY','GBP/CHF','EUR/CHF','AUD/CHF','EUR/AUD','GBP/AUD',
-                   'EUR/NZD','AUD/NZD','GBP/NZD','EUR/CAD','CAD/JPY','CHF/JPY',
-                   'USD/MXN','USD/SGD','USD/HKD','USD/NOK','USD/SEK',
-                   'EUR/SEK','GBP/CAD','AUD/EUR'],
-    'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT',
-                   'SILJ','PAAS','COPPER','URA','DXY','XLK'],
+                   'AUD/JPY','GBP/CHF','EUR/CHF','AUD/CHF','EUR/AUD',
+                   'GBP/AUD','EUR/NZD','AUD/NZD','GBP/NZD','EUR/CAD'],
+    'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT','XLK'],
     'crypto':     ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD',
                    'DOGE/USD','ADA/USD','AVAX/USD']
 }
@@ -77,30 +67,18 @@ def calc_supertrend(high, low, close, p=10, m=3):
 
 # ─── ROYAL PURPLE ─────────────────────────────────────────
 def calc_royal_purple(close, high, low, fast=20, slow=50, regime=200, atr_mult=3.0):
-    """
-    Replica la estrategia Royal Purple Trend Follower.
-    Retorna: signal ('LONG' | 'EXIT' | None), trail_stop (float)
-    No puede replicar HTF (daily desde timeframe diario = mismo TF aqui),
-    por eso se omite htfBull — el bot ya trabaja en 1D.
-    """
     if len(close) < regime + 10:
         return None, None
-
     ema_fast   = calc_ema(close, fast)
     ema_slow   = calc_ema(close, slow)
     ema_regime = calc_ema(close, regime)
-    atr        = (high - low).rolling(14).mean()  # ATR simplificado
-
+    atr        = (high - low).rolling(14).mean()
     price      = float(close.iloc[-1])
     ef         = float(ema_fast.iloc[-1])
     es         = float(ema_slow.iloc[-1])
     er         = float(ema_regime.iloc[-1])
-
     bull_state = price > es and price > er and ef > es
-
-    # trailing stop actual
-    trail = round(float(close.iloc[-1] - atr.iloc[-1] * atr_mult), 6)
-
+    trail      = round(float(close.iloc[-1] - atr.iloc[-1] * atr_mult), 6)
     if bull_state:
         return 'LONG', trail
     else:
@@ -183,10 +161,7 @@ def process_df(df, ticker):
     w52h = round(float(close.tail(252).max()), 4)
     w52l = round(float(close.tail(252).min()), 4)
     sym  = ticker.replace('/USD','').replace('/','_')
-
-    # ── Royal Purple signal ──
     rp_signal, rp_trail = calc_royal_purple(close, high, low)
-
     return {
         'symbol':       sym,
         'price':        round(price, 6 if price < 1 else 2),
@@ -198,8 +173,8 @@ def process_df(df, ticker):
         'senales':      tags,
         'w52h':         w52h,
         'w52l':         w52l,
-        'royal_purple': rp_signal,   # 'LONG' | None
-        'rp_trail':     rp_trail,    # nivel de trailing stop
+        'royal_purple': rp_signal,
+        'rp_trail':     rp_trail,
         'pe': None, 'beta': None, 'mcap': None,
         'indicators': {
             'macd':       {'val': mv,            'status': 'Bull' if mv > msv else 'Bear'},
@@ -230,7 +205,7 @@ def fetch_market_background(market):
             d = fetch_symbol(sym)
             if d: results.append(d)
         if i + batch_size < len(syms):
-            time.sleep(2)
+            time.sleep(8)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market]      = results
     _cache_time[market] = time.time()
@@ -268,10 +243,22 @@ def monitor_loop():
             print(f"[monitor] {e}")
         time.sleep(300)
 
-# ─── RUTA NUEVA: Royal Purple activos ─────────────────────
+# ─── RUTAS ────────────────────────────────────────────────
+@app.route('/')
+def index(): return render_template('index.html')
+
+@app.route('/api/scan/<market>')
+def scan(market): return jsonify(fetch_market(market))
+
+@app.route('/api/refresh/<market>')
+def force_refresh(market):
+    _cache.pop(market, None)
+    _cache_time.pop(market, None)
+    threading.Thread(target=fetch_market_background, args=(market,), daemon=True).start()
+    return jsonify({'status': 'refreshing', 'market': market})
+
 @app.route('/api/royal-purple')
 def royal_purple_activos():
-    """Devuelve solo los activos con Royal Purple LONG activo, ordenados por score."""
     results = []
     for market, items in _cache.items():
         for item in items:
@@ -279,13 +266,6 @@ def royal_purple_activos():
                 results.append({**item, 'market': market})
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     return jsonify(results)
-
-# ─── RUTAS ────────────────────────────────────────────────
-@app.route('/')
-def index(): return render_template('index.html')
-
-@app.route('/api/scan/<market>')
-def scan(market): return jsonify(fetch_market(market))
 
 @app.route('/api/fear-greed')
 def fear_greed():
