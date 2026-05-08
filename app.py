@@ -18,10 +18,6 @@ SYMBOLS = {
                    'JPM','V','MA','JNJ','PG','MRK','COST','ABBV','BAC',
                    'NFLX','CRM','AMD','INTC','MU','CSCO','TSM','AMAT',
                    'MCD','VLO','PLTR','IBM','BMRN'],
-    'forex':      ['EUR/USD','GBP/USD','USD/JPY','AUD/USD','USD/CAD',
-                   'USD/CHF','NZD/USD','EUR/GBP','EUR/JPY','GBP/JPY',
-                   'AUD/JPY','GBP/CHF','EUR/CHF','AUD/CHF','EUR/AUD',
-                   'GBP/AUD','EUR/NZD','AUD/NZD','GBP/NZD','EUR/CAD'],
     'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT','XLK'],
     'crypto':     ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD',
                    'DOGE/USD','ADA/USD','AVAX/USD']
