@@ -1063,7 +1063,14 @@ function doRefresh() {
   Promise.all([loadMarket(S.market), loadSidebar()])
     .finally(() => btn.classList.remove('spin'));
 }
-
+  
+function clearFilters() {
+  S.filter = null;
+  qsa('.chip').forEach(c => c.classList.remove('active'));
+  S.view = [...S.data];
+  renderTable();
+}
+  
 (async function init() {
   loadMarket('wallstreet');
   loadSidebar();
