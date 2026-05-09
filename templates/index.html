@@ -1083,7 +1083,10 @@ function clearFilters() {
   loadMarket('wallstreet');
   loadSidebar();
   setupNotif();
-  let nextRefresh = 90 * 60;
+  setInterval(tick, 1000);
+tick();
+
+let nextRefresh = 90 * 60;
 setInterval(() => {
   nextRefresh--;
   if (nextRefresh <= 0) {
@@ -1092,7 +1095,8 @@ setInterval(() => {
   }
   const m = String(Math.floor(nextRefresh / 60)).padStart(2,'0');
   const s = String(nextRefresh % 60).padStart(2,'0');
-  qs('#clock').textContent = new Date().toLocaleTimeString('es-AR', {hour12:false}) + '  ↻ ' + m + ':' + s;
+  const clockEl = qs('#clock');
+  if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('es-AR', {hour12:false}) + '  ↻ ' + m + ':' + s;
 }, 1000);
 </script>
 </body>
