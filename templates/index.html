@@ -635,7 +635,6 @@ function fgLbl(v) {
 function tick() {
   qs('#clock').textContent = new Date().toLocaleTimeString('es-AR', { hour12: false });
 }
-setInterval(tick, 1000); tick();
 
 qsa('.tab').forEach(t => t.addEventListener('click', () => {
   const tab = t.dataset.tab;
