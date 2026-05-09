@@ -306,6 +306,12 @@ def alert_stream():
     return Response(gen(), content_type='text/event-stream', headers={'Cache-Control': 'no-cache'})
 
 # ─── ARRANQUE ─────────────────────────────────────────────
+def startup_loader():
+    for market in SYMBOLS:
+        fetch_market_background(market)
+        time.sleep(5)
+
+threading.Thread(target=startup_loader, daemon=True).start()
 threading.Thread(target=monitor_loop, daemon=True).start()
 
 if __name__ == '__main__':
