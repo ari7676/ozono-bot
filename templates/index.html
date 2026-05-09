@@ -1083,8 +1083,17 @@ function clearFilters() {
   loadMarket('wallstreet');
   loadSidebar();
   setupNotif();
-  setInterval(doRefresh, 5 * 60 * 1000);
-})();
+  let nextRefresh = 90 * 60;
+setInterval(() => {
+  nextRefresh--;
+  if (nextRefresh <= 0) {
+    doRefresh();
+    nextRefresh = 90 * 60;
+  }
+  const m = String(Math.floor(nextRefresh / 60)).padStart(2,'0');
+  const s = String(nextRefresh % 60).padStart(2,'0');
+  qs('#clock').textContent = new Date().toLocaleTimeString('es-AR', {hour12:false}) + '  ↻ ' + m + ':' + s;
+}, 1000);
 </script>
 </body>
 </html>
