@@ -194,7 +194,7 @@ def fetch_market_background(market):
     _loading.add(market)
     syms    = SYMBOLS.get(market, [])
     results = []
-    batch_size = 8
+    batch_size = 4
     for i in range(0, len(syms), batch_size):
         batch = syms[i:i+batch_size]
         for sym in batch:
