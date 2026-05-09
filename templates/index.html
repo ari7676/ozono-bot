@@ -1070,6 +1070,14 @@ function clearFilters() {
   S.view = [...S.data];
   renderTable();
 }
+
+function clearFilters() {
+  S.filter = null;
+  qsa('.chip').forEach(c => c.classList.remove('active'));
+  S.view = [...S.data];
+  renderTable();
+}
+
   
 (async function init() {
   loadMarket('wallstreet');
