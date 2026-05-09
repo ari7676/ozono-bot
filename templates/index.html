@@ -1070,19 +1070,13 @@ function clearFilters() {
   renderTable();
 }
 
-function clearFilters() {
-  S.filter = null;
-  qsa('.chip').forEach(c => c.classList.remove('active'));
-  S.view = [...S.data];
-  renderTable();
-}
-
-  
-(async function init() {
+  (async function init() {
   loadMarket('wallstreet');
   loadSidebar();
   setupNotif();
-  setInterval(tick, 1000);
+})();
+
+setInterval(tick, 1000);
 tick();
 
 let nextRefresh = 90 * 60;
@@ -1095,7 +1089,7 @@ setInterval(() => {
   const m = String(Math.floor(nextRefresh / 60)).padStart(2,'0');
   const s = String(nextRefresh % 60).padStart(2,'0');
   const clockEl = qs('#clock');
-  if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('es-AR', {hour12:false}) + '  ↻ ' + m + ':' + s;
+  if (clockEl) clockEl.textContent = new Date().toLocaleTimeString('es-AR', {hour12:false}) + '  \u21bb ' + m + ':' + s;
 }, 1000);
 </script>
 </body>
