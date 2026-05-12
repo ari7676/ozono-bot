@@ -10,8 +10,10 @@ app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 CORS(app)
 
-TWELVE_KEY = os.environ.get('TWELVE_KEY', '')
-BASE_URL   = 'https://api.twelvedata.com'
+TWELVE_KEY       = os.environ.get('TWELVE_KEY', '')
+TELEGRAM_TOKEN   = os.environ.get('TELEGRAM_TOKEN', '')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
+BASE_URL         = 'https://api.twelvedata.com'
 
 SYMBOLS = {
     'wallstreet': ['NVDA','AAPL','MSFT','GOOGL','AMZN','META','TSLA','AVGO',
@@ -29,6 +31,17 @@ _loading      = set()
 CACHE_TTL     = 3600
 _sse_clients  = []
 _prev_signals = {}
+
+# ─── TELEGRAM ─────────────────────────────────────────────
+def send_telegram(msg):
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
+        return
+    try:
+        req.post(f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage',
+                 json={'chat_id': TELEGRAM_CHAT_ID, 'text': msg, 'parse_mode': 'HTML'},
+                 timeout=10)
+    except Exception as e:
+        print(f'[telegram] {e}')
 
 # ─── INDICADORES ──────────────────────────────────────────
 def calc_ema(s, p): return s.ewm(span=p, adjust=False).mean()
@@ -201,7 +214,7 @@ def fetch_market_background(market):
             d = fetch_symbol(sym)
             if d: results.append(d)
         if i + batch_size < len(syms):
-            time.sleep(8)
+            time.sleep(15)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market]      = results
     _cache_time[market] = time.time()
@@ -225,16 +238,42 @@ def monitor_loop():
                 for item in _cache.get(market, []):
                     sym  = item['symbol']
                     sig  = item['signal']
-                    prev = _prev_signals.get(sym)
-                    if prev and prev != sig and sig in ('BUY','SELL','STRONG BUY','STRONG SELL'):
+                    rp   = item.get('royal_purple')
+                    prev = _prev_signals.get(sym, {})
+                    prev_sig = prev.get('signal')
+                    prev_rp  = prev.get('rp')
+
+                    # Alerta señal general
+                    if prev_sig and prev_sig != sig and sig in ('BUY','SELL','STRONG BUY','STRONG SELL'):
                         alert = {
-                            'symbol': sym, 'signal': sig, 'prev': prev,
+                            'symbol': sym, 'signal': sig, 'prev': prev_sig,
                             'price':  item['price'], 'change': item['change'],
                             'score':  item.get('score', 0), 'market': market,
                             'time':   datetime.now().strftime('%H:%M:%S')
                         }
                         for q in list(_sse_clients): q.append(alert)
-                    _prev_signals[sym] = sig
+
+                    # Alerta Royal Purple nueva entrada
+                    if rp == 'LONG' and prev_rp != 'LONG':
+                        trail = item.get('rp_trail', 0)
+                        msg = (
+                            f"🟣 <b>ROYAL PURPLE — ENTRADA LONG</b>\n"
+                            f"📊 <b>{sym}</b> | {market.upper()}\n"
+                            f"💰 Precio: <b>${item['price']}</b>\n"
+                            f"🛡 Trail Stop: <b>${trail}</b>\n"
+                            f"📈 Score: {item.get('score', 0)}/100\n"
+                            f"🕐 {datetime.now().strftime('%H:%M:%S')}"
+                        )
+                        send_telegram(msg)
+                        rp_alert = {
+                            'symbol': sym, 'signal': 'ROYAL PURPLE LONG', 'prev': '',
+                            'price':  item['price'], 'change': item['change'],
+                            'score':  item.get('score', 0), 'market': market,
+                            'time':   datetime.now().strftime('%H:%M:%S')
+                        }
+                        for q in list(_sse_clients): q.append(rp_alert)
+
+                    _prev_signals[sym] = {'signal': sig, 'rp': rp}
         except Exception as e:
             print(f"[monitor] {e}")
         time.sleep(300)
