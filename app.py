@@ -35,6 +35,11 @@ CACHE_TTL     = 3600
 _sse_clients  = []
 _prev_signals = {}
 
+# Rate limit Twelve Data free tier: 8 llamadas/minuto
+BATCH_SIZE     = 4    # llamadas por batch
+BATCH_SLEEP    = 35   # segundos entre batches (seguro bajo 8/min)
+MARKET_SLEEP   = 60   # segundos entre mercados en startup
+
 def send_telegram(msg):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
         return
@@ -94,7 +99,6 @@ def calc_royal_purple(close, high, low, fast=20, slow=50, regime=200, atr_mult=3
     er    = float(ema_regime.iloc[-1])
     rsi_v = float(rsi.iloc[-1])
 
-    # Condicion base: 3 EMAs alineadas + RSI no sobrecomprado
     bull_state = price > es and price > er and ef > es and rsi_v < rsi_max
     trail      = round(float(close.iloc[-1] - atr.iloc[-1] * atr_mult), 6)
 
@@ -215,19 +219,20 @@ def fetch_market_background(market):
     _loading.add(market)
     syms    = SYMBOLS.get(market, [])
     results = []
-    batch_size = 4
-    for i in range(0, len(syms), batch_size):
-        batch = syms[i:i+batch_size]
+    for i in range(0, len(syms), BATCH_SIZE):
+        batch = syms[i:i+BATCH_SIZE]
         for sym in batch:
             d = fetch_symbol(sym)
             if d: results.append(d)
-        if i + batch_size < len(syms):
-            time.sleep(15)
+            time.sleep(8)  # 1 llamada cada 8 segundos = max 7.5/min, bajo el limite
+        if i + BATCH_SIZE < len(syms):
+            print(f"[cache] {market}: batch {i//BATCH_SIZE + 1} completado, esperando...")
+            time.sleep(BATCH_SLEEP)
     results.sort(key=lambda x: x.get('score', 0), reverse=True)
     _cache[market]      = results
     _cache_time[market] = time.time()
     _loading.discard(market)
-    print(f"[cache] {market}: {len(results)} simbolos")
+    print(f"[cache] {market}: {len(results)} simbolos cargados")
 
 def fetch_market(market):
     now = time.time()
@@ -353,9 +358,12 @@ def alert_stream():
     return Response(gen(), content_type='text/event-stream', headers={'Cache-Control': 'no-cache'})
 
 def startup_loader():
+    time.sleep(5)
     for market in SYMBOLS:
+        print(f"[startup] cargando {market}...")
         fetch_market_background(market)
-        time.sleep(5)
+        print(f"[startup] {market} listo, esperando antes del siguiente...")
+        time.sleep(MARKET_SLEEP)
 
 threading.Thread(target=startup_loader, daemon=True).start()
 threading.Thread(target=monitor_loop, daemon=True).start()
