@@ -15,11 +15,14 @@ TELEGRAM_TOKEN   = os.environ.get('TELEGRAM_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
 BASE_URL         = 'https://api.twelvedata.com'
 
+# =====================
+# SIMBOLOS — sincronizado con Royal Purple Scanners v2
+# =====================
 SYMBOLS = {
     'wallstreet': ['NVDA','AAPL','MSFT','GOOGL','AMZN','META','TSLA','AVGO',
                    'JPM','V','MA','JNJ','PG','MRK','COST','ABBV','BAC',
                    'NFLX','CRM','AMD','INTC','MU','CSCO','TSM','AMAT',
-                   'MCD','VLO','PLTR','IBM','BMRN'],
+                   'MCD','VLO','PLTR','IBM','BMRN','ORCL','GEV','AVAV'],
     'indices':    ['SPY','QQQ','DIA','IWM','GLD','SLV','USO','TLT','XLK'],
     'crypto':     ['BTC/USD','ETH/USD','BNB/USD','SOL/USD','XRP/USD',
                    'DOGE/USD','ADA/USD','AVAX/USD']
@@ -72,19 +75,29 @@ def calc_supertrend(high, low, close, p=10, m=3):
         else:                                  direction.iloc[i] = direction.iloc[i-1]
     return lower.where(direction == 1, upper), direction
 
-def calc_royal_purple(close, high, low, fast=20, slow=50, regime=200, atr_mult=3.0):
+# =====================
+# ROYAL PURPLE v2 — con filtro RSI < 75
+# Consistente con Royal Purple Scanner v2 de TradingView
+# =====================
+def calc_royal_purple(close, high, low, fast=20, slow=50, regime=200, atr_mult=3.0, rsi_max=75):
     if len(close) < regime + 10:
         return None, None
     ema_fast   = calc_ema(close, fast)
     ema_slow   = calc_ema(close, slow)
     ema_regime = calc_ema(close, regime)
     atr        = (high - low).rolling(14).mean()
-    price      = float(close.iloc[-1])
-    ef         = float(ema_fast.iloc[-1])
-    es         = float(ema_slow.iloc[-1])
-    er         = float(ema_regime.iloc[-1])
-    bull_state = price > es and price > er and ef > es
+    rsi        = calc_rsi(close)
+
+    price = float(close.iloc[-1])
+    ef    = float(ema_fast.iloc[-1])
+    es    = float(ema_slow.iloc[-1])
+    er    = float(ema_regime.iloc[-1])
+    rsi_v = float(rsi.iloc[-1])
+
+    # Condicion base: 3 EMAs alineadas + RSI no sobrecomprado
+    bull_state = price > es and price > er and ef > es and rsi_v < rsi_max
     trail      = round(float(close.iloc[-1] - atr.iloc[-1] * atr_mult), 6)
+
     if bull_state:
         return 'LONG', trail
     else:
@@ -246,12 +259,17 @@ def monitor_loop():
                         }
                         for q in list(_sse_clients): q.append(alert)
 
+                    # =====================
+                    # ALERTA ROYAL PURPLE v2 — incluye RSI en el mensaje
+                    # =====================
                     if rp == 'LONG' and prev_rp != 'LONG':
-                        trail = item.get('rp_trail', 0)
+                        trail   = item.get('rp_trail', 0)
+                        rsi_val = item.get('indicators', {}).get('rsi', {}).get('val', 0)
                         msg = (
-                            f"🟣 <b>ROYAL PURPLE — ENTRADA LONG</b>\n"
+                            f"🟣 <b>ROYAL PURPLE v2 — ENTRADA LONG</b>\n"
                             f"📊 <b>{sym}</b> | {market.upper()}\n"
                             f"💰 Precio: <b>${item['price']}</b>\n"
+                            f"📉 RSI: <b>{rsi_val}</b> (filtro &lt;75 activo)\n"
                             f"🛡 Trail Stop: <b>${trail}</b>\n"
                             f"📈 Score: {item.get('score', 0)}/100\n"
                             f"🕐 {datetime.now().strftime('%H:%M:%S')}"
